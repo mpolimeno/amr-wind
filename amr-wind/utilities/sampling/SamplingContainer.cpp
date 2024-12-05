@@ -11,10 +11,10 @@ void SamplingContainer::setup_container(
     BL_PROFILE("amr-wind::SamplingContainer::setup");
     const bool communicate_comp = true;
     for (int i = 0; i < num_real_components; ++i) {
-        AddRealComp(communicate_comp);
+        AddRealComp(static_cast<int>(communicate_comp));
     }
     for (int i = 0; i < num_int_components; ++i) {
-        AddIntComp(communicate_comp);
+        AddIntComp(static_cast<int>(communicate_comp));
     }
 
     const int nlevels = m_mesh.finestLevel() + 1;
@@ -118,7 +118,8 @@ void SamplingContainer::initialize_particles(
                     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
                         pp.pos(idim) = loc[idim];
                     }
-                    pp.idata(IIx::uid) = p_dids[ip] + uid_offset;
+                    pp.idata(IIx::uid) =
+                        static_cast<int>(p_dids[ip] + uid_offset);
                     pp.idata(IIx::sid) = probe_id;
                     pp.idata(IIx::nid) = static_cast<int>(p_dids[ip]);
                 });
