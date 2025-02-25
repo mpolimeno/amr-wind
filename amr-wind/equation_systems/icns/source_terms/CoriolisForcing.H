@@ -26,6 +26,11 @@ public:
         const FieldState fstate,
         const amrex::Array4<amrex::Real>& src_term) const override;
 
+    void mfapply(
+        const int lev,
+        const FieldState fstate,
+        amrex::MultiFab& src_term) const override;
+
 private:
     const Field& m_velocity;
 

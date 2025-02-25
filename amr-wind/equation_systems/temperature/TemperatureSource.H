@@ -31,6 +31,10 @@ public:
         const amrex::Box& bx,
         const FieldState fstate,
         const amrex::Array4<amrex::Real>& src_term) const = 0;
+    virtual void mfapply(
+        const int lev,
+        const FieldState fstate,
+        amrex::MultiFab& src_term) const {};
 };
 
 } // namespace pde
