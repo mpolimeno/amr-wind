@@ -35,6 +35,11 @@ public:
     void read_bforce_profile(const std::string& filename);
     void read_bforce_timetable(const std::string& filename);
 
+    void mfapply(
+        const int lev,
+        const FieldState fstate,
+        amrex::MultiFab& src_term) const override;
+
 private:
     //! Time
     const SimTime& m_time;

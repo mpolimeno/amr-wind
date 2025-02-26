@@ -167,4 +167,57 @@ void BodyForce::operator()(
     }
 }
 
+void BodyForce::mfapply(
+    const int lev, const FieldState fstate, amrex::MultiFab& src_term) const
+{
+    const auto& nph_time = 0.5 * (m_time.current_time() + m_time.new_time());
+    const auto& problo = m_mesh.Geom(lev).ProbLoArray();
+    const auto& dx = m_mesh.Geom(lev).CellSizeArray();
+
+    const amrex::Real* force_ht = m_ht.data();
+    const amrex::Real* force_ht_end = m_ht.end();
+    const amrex::Real* force_x = m_prof_x.data();
+    const amrex::Real* force_y = m_prof_y.data();
+
+    const auto& src_term_arrs = src_term.arrays();
+    if (m_type == "height_varying" || m_type == "height-varying") {
+
+        amrex::ParallelFor(
+            src_term,
+            [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k) noexcept {
+                amrex::IntVect iv(i, j, k);
+                const amrex::Real ht = problo[2] + (iv[2] + 0.5) * dx[2];
+                const amrex::Real fx = amr_wind::interp::linear(
+                    force_ht, force_ht_end, force_x, ht);
+                const amrex::Real fy = amr_wind::interp::linear(
+                    force_ht, force_ht_end, force_y, ht);
+                src_term_arrs[nbx](i, j, k, 0) += fx;
+                src_term_arrs[nbx](i, j, k, 1) += fy;
+            });
+
+    } else {
+
+        amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> forcing{
+            m_body_force[0], m_body_force[1], m_body_force[2]};
+
+        if (!m_utt_file.empty()) {
+            // Populate forcing from file if supplied
+            forcing[0] =
+                amr_wind::interp::linear(m_time_table, m_fx_table, nph_time);
+            forcing[1] =
+                amr_wind::interp::linear(m_time_table, m_fy_table, nph_time);
+            forcing[2] =
+                amr_wind::interp::linear(m_time_table, m_fz_table, nph_time);
+        }
+
+        amrex::Real coeff =
+            (m_type == "oscillatory") ? std::cos(m_omega * nph_time) : 1.0;
+        amrex::ParallelFor(
+            src_term, amrex::IntVect(0), AMREX_SPACEDIM,
+            [=] AMREX_GPU_DEVICE(int nbx, int i, int j, int k, int n) noexcept {
+                src_term_arrs[nbx](i, j, k, n) += coeff * forcing[n];
+            });
+    }
+}
+
 } // namespace amr_wind::pde::icns
