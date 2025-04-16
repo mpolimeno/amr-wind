@@ -43,6 +43,7 @@ objectives:
 
    getting_started/index
    walkthrough/index
+   examples/examples
    user/user
    theory/theory 
    developer/index
